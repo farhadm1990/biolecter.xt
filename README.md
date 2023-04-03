@@ -10,3 +10,18 @@ library(devtools)
 ```
 
 ## 2. Download and isntall biolecter
+```R
+devtools::install_github("farhadm1990/biolecter.xt")
+library(biolecter.xt)
+```
+
+## 3. Rinning `biolecter_xt` function
+```R
+biolecter.xt:::biolect_xt(working_dir=
+caliberation=
+n_sheets=
+path_to_biolector_xlsx=
+replic=
+)
+```
+
