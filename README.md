@@ -17,11 +17,11 @@ library(biolecter.xt)
 
 ## 3. Rinning `biolecter_xt` function
 ```R
-biolecter.xt:::biolect_xt(working_dir=
-caliberation=
-n_sheets=
-path_to_biolector_xlsx=
-replic=
+biolecter.xt:::biolect_xt(path_to_biolector_xlsx="path_to_file.xlsx",
+working_dir="output_directory",
+caliberation= "both", #to show calibrated (TRUE), raw (FALSE) or both of them "both".
+n_sheets= 8, #Number of sheets in the output xlsx dataset (oblicatory).
+replic= TRUE #if you have biological/technical replica
 )
 ```
 
