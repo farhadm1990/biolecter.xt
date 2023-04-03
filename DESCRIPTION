@@ -1,0 +1,12 @@
+Package: biolecter.xt
+Title: Generates the timeseries plots and tables from biolecter XT machine
+Version: 0.0.0.9000
+Authors@R: 
+    person("Farhad", " M. Panah", , "farhad@food.ku.dk", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-6623-1528"))
+Description: This package takes all data output from biolecter XT with different filtersets and creates tidy output tables and publication-quality figures with standard deviations if you have biological/technical replica.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
