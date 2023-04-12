@@ -103,19 +103,26 @@ for(i in 1:length(filterset)){
     
 }
 
- 
+#making df of filtersets with their gains. 
+gain_df = data.frame(filterset = filterset, gain = unlist(chans_gain_value))
+
+
+
 full_long = data.table::rbindlist(full) %>% 
                 pivot_longer(!c("cycle", "time", "filterset"), 
                 names_to = "well", 
                 values_to = "value") %>% 
                 filter(!is.na(value)) %>% 
                 mutate(gain = ifelse(grepl(filterset, 
-                pattern = "Biomass_1"), paste0(chans_gain_value[[1]]),
+                pattern = "Biomass_1"), gain_df[gain_df$filterset == "Biomass_1","gain"],
                 ifelse(grepl(filterset, 
-                pattern = "Biomass_2"), paste0(chans_gain_value[[2]]), 
+                pattern = "Biomass_2"), gain_df[gain_df$filterset == "Biomass_2","gain"], 
                 ifelse(grepl(filterset, 
-                pattern = "Biomass_3"), 
-                paste0(chans_gain_value[[3]]), "pH")))) %>%
+                pattern = "Biomass_3"), gain_df[gain_df$filterset == "Biomass_3","gain"],
+                ifelse(grepl(filterset, 
+                pattern = "Riboflavine"), gain_df[gain_df$filterset == "Riboflavine","gain"],
+                ifelse(grepl(filterset, 
+                pattern = "pH"), gain_df[gain_df$filterset == "pH","gain"], gain_df$filterset)))))) %>%
                 mutate(calibrated = as.factor(ifelse(grepl(filterset, pattern = "_cal"), "Calibrated", "Raw")))
 
 full_long$value <- as.numeric(full_long$value)
@@ -124,13 +131,14 @@ full_long$filterset = str_replace_all(c("_cal"= "", "_raw" = ""), string = full_
 
 #a function for creating multiplots
 
-mutli_plot = function (data, 
+mutli_plot = function (data = full_long, 
                         well, 
                         flt_set = filterset, 
                         calibrated = TRUE,
                         isolate = isolate) { 
 
 colrs = c("darkmagenta", "forestgreen", "deepskyblue", "darkorange")
+
 #Making a folder for the user
 if(dir.exists(paths =  glue("{getwd()}/{user}"))){
 output_dir = glue("{getwd()}/{user}")
@@ -150,8 +158,8 @@ if(replic == TRUE){
     lay_df = layout_df[complete.cases(layout_df),] %>% group_by(Description) %>% data.frame() %>% mutate(group = as.numeric(factor(Description))) 
     #expanding group vairable to the length of long data
     if(length(unique(lay_df[lay_df$Well %in% data$well, "group"])) > 1){
-    data$group <- rep(lay_df[lay_df$Well %in% data$well, "group"], length(data$well)/length(unique(data$well)))
-    data$isolate <- rep(lay_df[lay_df$Well %in% data$well, "Description"], length(data$well)/length(unique(data$well)))
+    data$group <- ifelse(data$well %in% lay_df$Well, lay_df$group, "No")
+    data$isolate <- ifelse(data$well %in% lay_df$Well, lay_df$Description, "No")
     } else if((length(unique(lay_df[lay_df$Well %in% data$well, "group"])) == 1)){
     data$group <- rep(unique(lay_df[lay_df$Well %in% data$well, "group"]), nrow(data))
     data$isolate <- rep(unique(lay_df[lay_df$Well %in% data$well, "Description"]), nrow(data))
@@ -176,15 +184,19 @@ if(replic == TRUE){
     }
 
     #biomass
-    df_biomass <- df %>% filter(grepl("Biomass", filterset)) %>%  mutate(gain2 = glue("Biomass (gain {gain})"), gain = NULL) 
+    df_biomass <- df %>% filter(grepl("Biomass", filterset)) %>%  mutate(gain2 = glue("Biomass (gain {gain})"), gain = NULL)  # nolint # nolint: line_length_linter.
 
-#ph 
-    df_ph <- df %>% filter(grepl("pH", filterset)) %>%  mutate( gain = NULL) 
+    #ph 
+    df_ph <- df %>% filter(grepl("pH", filterset)) %>%  mutate(gain2 = glue("pH (gain {gain})"), gain = NULL) 
 
-#DO 
-    df_do <- df %>% filter(grepl("DO", filterset)) %>%  mutate( gain = NULL) 
+    #riboflavin
+    df_rbf <- df %>% filter(grepl("Riboflavin", filterset)) %>%  mutate(gain2 = glue("Riboflavine (gain {gain})"), gain = NULL) 
+
+    #DO 
+    df_do <- df %>% filter(grepl("DO", filterset)) %>%  mutate(gain2 = glue("DO (gain {gain})"), gain = NULL) 
 
 #plots
+    #biomass plot
     colrsp1 = colrs[1:length(unique(df_biomass$gain2))]
     p1 = df_biomass %>% ggplot(aes(x = time, y = mean, group = gain2)) +
             geom_pointrange(aes(ymin = mean-std, ymax = mean+std), 
@@ -202,71 +214,103 @@ if(replic == TRUE){
             facet_wrap(~calibrated, scale = "free_y")  +
             labs(color = "Filterset") +
             guides(fill = FALSE) +
-            geom_label_repel(data = . %>% filter(time == last(time)), 
-            aes(label = gain2), color = "black", show.legend = FALSE,
-            na.rm = TRUE, size = 02, 
-            nudge_x = 1, 
-            nudge_y = 1,
-            box.padding = unit(0.005,  "line"), 
-            label.size = 0.1) + 
+            #geom_label_repel(data = . %>% filter(time == last(time)), 
+            #aes(label = gain2), color = "black", show.legend = FALSE,
+            #na.rm = TRUE, size = 02, 
+            #nudge_x = 1, 
+            #nudge_y = 1,
+            #box.padding = unit(0.005,  "line"), 
+            #label.size = 0.1) + 
             ylab("Biomass") +
-            xlab("") + 
+            xlab("Time, h") + 
             theme(strip.text = element_text(face = "bold", color = "white"),
-            strip.background = element_rect( fill = "aquamarine4")) + 
-            ggtitle(glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."), subtitle = glue("Anaerobic mode: {anaerob}"))
+            strip.background = element_rect( fill = "aquamarine4"))
 
             #a control for empty plots
             if(dim(p1$data)[1] == 0){
             p1 <- NULL
             }
             
-
-        colrsp2 = colrs[1:length(unique(df_ph$filterset))]
-        p2 = df_ph %>% ggplot(aes(x = time, y = mean)) +
+        #ph plot
+        colrsp2 = colrs[1:length(unique(df_ph$gain2))]
+        p2 = df_ph %>% ggplot(aes(x = time, y = mean, group = gain2)) +
             geom_pointrange(aes(ymin = mean-std, ymax = mean+std), 
             color = "deepskyblue", alpha = 0.25 ) + 
             geom_errorbar(aes(ymin = mean-std, ymax = mean+std), 
             width = 1, color = "deeppink1", alpha = 0.05,
             position = position_dodge(0.5)) +
-            geom_line( aes(group = filterset, 
-            color = filterset), show.legend = FALSE, lwd = 0.5) +
-            geom_point(pch = 21, aes(fill = filterset), 
+            geom_line( aes( color = gain2), show.legend = TRUE, lwd = 0.5) +
+            geom_point(pch = 21, aes(fill = gain2), 
             color = "white", stroke = 0.05, show.legend = FALSE) +
             scale_color_manual(values = colrsp2) +
             scale_fill_manual(values = colrsp2) +
             scale_x_continuous(n.breaks = 8) + 
             theme_bw()  + 
+            guides(fill = FALSE) +
             facet_wrap(~calibrated, scale = "free_y")  +
             labs(color = "Filterset")  + 
             ylab("pH") +
             xlab("Time, h") + 
             theme(strip.text = element_text(face = "bold", color = "white"),
-            strip.background = element_rect( fill = "aquamarine4"))+
-            ggtitle(glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."), subtitle = glue("Anaerobic mode: {anaerob}"))
+            strip.background = element_rect( fill = "aquamarine4"))
+
             #a control for empty plots
             if(dim(p2$data)[1] == 0){
             p2 <- NULL
             }
             
+        #Riboflavin plot
+        colrsp3 = colrs[1:length(unique(df_rbf$filterset))]
+        p3 = df_rbf %>% ggplot(aes(x = time, y = mean, group = gain2)) +
+            geom_pointrange(aes(ymin = mean-std, ymax = mean+std), 
+            color = "lightblue", alpha = 0.25 ) + 
+            geom_errorbar(aes(ymin = mean-std, ymax = mean+std), 
+            width = 1, color = "deeppink1", alpha = 0.05,
+            position = position_dodge(0.5)) +
+            geom_line( aes( color = gain2), show.legend = TRUE, lwd = 0.5) +
+            geom_point(pch = 21, aes(fill = gain2), 
+            color = "white", stroke = 0.05, show.legend = FALSE) +
+            scale_color_manual(values = colrsp3) +
+            scale_fill_manual(values = colrsp3) +
+            scale_x_continuous(n.breaks = 8) + 
+            theme_bw()  + 
+            facet_wrap(~calibrated, scale = "free_y")  +
+            labs(color = "Filterset") +
+            guides(fill = FALSE) +
+            #geom_label_repel(data = . %>% filter(time == last(time)), 
+            #aes(label = gain2), color = "black", show.legend = FALSE,
+            #na.rm = TRUE, size = 02, 
+            #nudge_x = 1, 
+            #nudge_y = 1,
+            #box.padding = unit(0.005,  "line"), 
+            #label.size = 0.1) + 
+            ylab("Riboflavin") +
+            xlab("Time, h") + 
+            theme(strip.text = element_text(face = "bold", color = "white"),
+            strip.background = element_rect( fill = "aquamarine4")) 
 
+            #a control for empty plots
+            if(dim(p3$data)[1] == 0){
+            p3 <- NULL
+            }
 
         #DO plot
-        colrsp3 = colrs[1:length(unique(df_do$filterset))]
+        colrsp4 = colrs[1:length(unique(df_do$filterset))]
         if (anaerob == "Off"){
-        p3  = df_do %>%   
-        ggplot(aes(x = time, y = mean)) +
-        geom_pointrange(aes(ymin = mean-std, ymax = mean+std), 
-        color = "deepskyblue", alpha = 0.25 ) + 
-        geom_errorbar(aes(ymin = mean-std, ymax = mean+std), 
-        width = 1, color = "deeppink1", alpha = 0.05,
-        position = position_dodge(0.5))+
-        geom_line( aes(y = value, group = filterset, 
-        color = filterset), show.legend = FALSE, lwd = 0.5) +
-        geom_point(pch = 21, aes(fill = filterset), 
-        color = "grey", stroke = 0.05, show.legend = FALSE) +
-        scale_color_manual(values = colrsp3) +
-        scale_fill_manual(values = colrsp3) +
-        scale_x_continuous(n.breaks = 8) + 
+            p4  = df_do %>%   
+            ggplot(aes(x = time, y = mean)) +
+            geom_pointrange(aes(ymin = mean-std, ymax = mean+std), 
+            color = "deepskyblue", alpha = 0.25 ) + 
+            geom_errorbar(aes(ymin = mean-std, ymax = mean+std), 
+            width = 1, color = "deeppink1", alpha = 0.05,
+            position = position_dodge(0.5))+
+            geom_line( aes(y = value, group = filterset, 
+            color = filterset), show.legend = TRUE, lwd = 0.5) +
+            geom_point(pch = 21, aes(fill = filterset), 
+            color = "grey", stroke = 0.05, show.legend = FALSE) +
+            scale_color_manual(values = colrsp4) +
+            scale_fill_manual(values = colrsp4) +
+            scale_x_continuous(n.breaks = 8) + 
             theme_bw()  +
             facet_wrap(~calibrated, scale = "free_y") + 
             labs(color = "Filterset") +
@@ -283,36 +327,69 @@ if(replic == TRUE){
             strip.background = element_rect( fill = "aquamarine4"))
 
             if(dim(p3$data)[1] == 0){
-            p3 <- NULL
+            p4 <- NULL
             }
+
+            if(!is.null(p1) & !is.null(p2) & !is.null(p3) & !is.null(p4)){
+            p4$theme$strip.text <- element_blank()
+            p3$theme$strip.text <- element_blank()
+            p2$theme$strip.text <- element_blank()
+            p3$theme$strip.text <- element_blank()
+            p2$theme$strip.text <- element_blank()
+            p1$labels$x <- element_blank()
+            p2$labels$x <- element_blank()
+            p3$labels$x <- element_blank()
+            p1 + p2 + p3 + p4 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + 
+            patchwork::plot_annotation( title = "Timeserie plot of different filtersets for isolate {i} with biological replicate.",
+            subtitle = "Anaerobic mode: {anaerob}", 
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
+            } else if(!is.null(p1) & is.null(p2) & !is.null(p3) & !is.null(p4)){
+            p4$theme$strip.text <- element_blank()
+            p3$theme$strip.text <- element_blank()
+            p1$labels$x <- element_blank()
+            p3$labels$x <- element_blank()
+
+            p1 + p3 + p4 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ 
+            patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
+            subtitle = glue("Anaerobic mode: {anaerob}"), 
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
+            } else if (is.null(p1) & is.null(p2) & !is.null(p3) & !is.null(p4) ){
+            p4$theme$strip.text <- element_blank()
+            p3$labels$x <- element_blank()
+
+            p3 + p4+ patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ 
+            patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
+            subtitle = glue("Anaerobic mode: {anaerob}"), 
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+            }
+    
+            } else {
             if(!is.null(p1) & !is.null(p2) & !is.null(p3)){
-            p3$theme$strip.text <- element_blank()
             p2$theme$strip.text <- element_blank()
             p3$theme$strip.text <- element_blank()
-            p2$theme$strip.text <- element_blank()
-            p3$labels$title <- NULL
-            p3$labels$subtitle <- NULL
-            p2$labels$title <- NULL
-            p2$labels$subtitle <- NULL
-            p1 + p2 + p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
+            p1$labels$x <- element_blank()
+            p2$labels$x <- element_blank()
+
+            p1 + p2+ p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + 
+            patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
+            subtitle = glue("Anaerobic mode: {anaerob}"), 
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
             } else if(!is.null(p1) & is.null(p2) & !is.null(p3)){
             p3$theme$strip.text <- element_blank()
-            p3$labels$title <- NULL
-            p3$labels$subtitle <- NULL
-            p1 + p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
-            } else if (is.null(p1) & is.null(p2) & !is.null(p3)){
-            p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
-            }
-              
-      
-            } else {
-            if(!is.null(p1) & !is.null(p2)){
-            p2$theme$strip.text <- element_blank()
-            p2$labels$title <- NULL
-            p2$labels$subtitle <- NULL
-            p1 + p2+ patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
-            } else if(!is.null(p1) & is.null(p2)){
-            p1 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
+            p1$labels$x <- element_blank()
+
+            p1 + p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ 
+            patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
+            subtitle = glue("Anaerobic mode: {anaerob}"), 
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+            } else if (!is.null(p1) & is.null(p2) & is.null(p3)){
+            p1 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ 
+            patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
+            subtitle = glue("Anaerobic mode: {anaerob}"), 
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
             }
 
         }
@@ -354,10 +431,16 @@ df_biomass =  df[grepl("Biomass", df$filterset), ] %>%
                 mutate(gain2 = glue("Biomass (gain {gain})"))
 
 #pH df
-df_ph = df %>% filter(filterset == "pH")
+df_ph = df %>% filter(filterset == "pH")  %>% 
+                mutate(gain2 = glue("pH (gain {gain})"))
+
+#riboflavine df
+df_rbf = df %>% filter(filterset == "Riboflavine") %>% 
+                mutate(gain2 = glue("Riboflavine (gain {gain})"))
 
 #DO df
-df_do = df %>% filter(filterset == "DO")
+df_do = df %>% filter(filterset == "DO") %>% 
+                mutate(gain2 = glue("DO (gain {gain})"))
 
 
 
@@ -365,114 +448,183 @@ df_do = df %>% filter(filterset == "DO")
 colrsp1 = colrs[1:length(unique(df_biomass$gain2))]
 p1  = df_biomass %>%   
     ggplot(aes(x = time, y = value)) +
-        geom_line( aes(y = value, group = gain2, color = gain2), lwd = 0.5, show.legend = TRUE) +
+        geom_line( aes(y = value, group = gain2, 
+        color = gain2), lwd = 0.5, show.legend = TRUE) +
         geom_point(pch = 21, aes(fill = gain2), 
         color = "grey", stroke = 0.05, show.legend = FALSE) +
         scale_color_manual(values = colrsp1) +
-        scale_fill_manual(values = c("darkmagenta", "forestgreen", "deepskyblue")) +
+        scale_fill_manual(values = colrsp1) +
         scale_x_continuous(n.breaks = 8) + 
             theme_bw()  +
             facet_wrap(~calibrated, scale = "free_y") + 
             labs(color = "Filterset") +
             guides(fill = FALSE) +
-            geom_label_repel(data = . %>% filter(time == last(time)), 
-            aes(label = gain2), color = "black", show.legend = FALSE,
-            na.rm = TRUE, size = 02, 
-            nudge_x = 0.1, 
-            nudge_y = 0.1,
-            box.padding = unit(0.005,  "line"), 
-            label.size = 0.1) + 
-            ylab("Biomass for there gains") +
+            #geom_label_repel(data = . %>% filter(time == last(time)), 
+            #aes(label = gain2), color = "black", show.legend = FALSE,
+           # na.rm = TRUE, size = 02, 
+           # nudge_x = 0.1, 
+            #nudge_y = 0.1,
+            #box.padding = unit(0.005,  "line"), 
+            #label.size = 0.1) + 
+            ylab("Biomass") +
             xlab("")+ 
             theme(strip.text = element_text(face = "bold", color = "white"),
-                 strip.background = element_rect( fill = "aquamarine4")) + 
-            ggtitle(glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), subtitle = glue("Anaerobic mode: {anaerob}"))
+            strip.background = element_rect( fill = "aquamarine4")) 
+                 
             #a control for to skip empty plots
             if(dim(p1$data)[1] == 0){
             p1 <- NULL
             }
 #ph plot
-colrsp2 = colrs[1:length(unique(df_ph$filterset))]
+colrsp2 = colrs[1:length(unique(df_ph$gain2))]
 p2  = df_ph %>%   
     ggplot(aes(x = time, y = value)) +
-        geom_line( aes(y = value, group = filterset, 
-        color = filterset), show.legend = FALSE, lwd = 0.5) +
-        geom_point(pch = 21, aes(fill = filterset), 
+        geom_line( aes(y = value, group = gain2, 
+        color = gain2), show.legend = TRUE, lwd = 0.5) +
+        geom_point(pch = 21, aes(fill = gain2), 
         color = "grey", stroke = 0.05, show.legend = FALSE) +
         scale_color_manual(values = colrsp2) +
         scale_fill_manual(values = colrsp2) +
         scale_x_continuous(n.breaks = 8) + 
-            theme_bw()  +
-            facet_wrap(~calibrated, scale = "free_y") + 
-            labs(color = "Filterset") + 
-            ylab("pH") +
-            xlab("Time, h") + 
-            theme(strip.text = element_text(face = "bold", color = "white"),
-            strip.background = element_rect( fill = "aquamarine4")) +
-            ggtitle(glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
-            subtitle = glue("Anaerobic mode: {anaerob}"))
+        theme_bw()  +
+        guides(fill = FALSE) +
+        facet_wrap(~calibrated, scale = "free_y") + 
+        labs(color = "Filterset") + 
+        ylab("pH") +
+        xlab("Time, h") + 
+        theme(strip.text = element_text(face = "bold", color = "white"),
+        strip.background = element_rect( fill = "aquamarine4")) 
             
-            if(dim(p2$data)[1] == 0){
+        if(dim(p2$data)[1] == 0){
             p2 <- NULL
             }
-            
-#DO plot
-colrsp3 = colrs[1:length(unique(df_do$filterset))]
-if (anaerob == "Off"){
-    p3  = df_do %>%   
-    ggplot(aes(x = time, y = value)) +
-        geom_line( aes(y = value, group = filterset, 
-        color = filterset), show.legend = FALSE, lwd = 0.5) +
-        geom_point(pch = 21, aes(fill = filterset), 
+#riboflavine
+         colrsp3 = colrs[1:length(unique(df_rbf$gain2))]
+         p3  = df_rbf %>%   
+        ggplot(aes(x = time, y = value)) +
+        geom_line( aes(y = value, group = gain2, 
+        color = gain2), lwd = 0.5, show.legend = TRUE) +
+        geom_point(pch = 21, aes(fill = gain2), 
         color = "grey", stroke = 0.05, show.legend = FALSE) +
         scale_color_manual(values = colrsp3) +
         scale_fill_manual(values = colrsp3) +
         scale_x_continuous(n.breaks = 8) + 
             theme_bw()  +
-            facet_wrap(~NULL, scale = "free_y") + 
+            facet_wrap(~calibrated, scale = "free_y") + 
             labs(color = "Filterset") +
-            geom_label_repel(data = . %>% filter(time == last(time)), 
-            aes(label = filterset), color = "black", show.legend = FALSE,
-            na.rm = TRUE, size = 02, 
-            nudge_x = 1, 
-            nudge_y = 1,
-            box.padding = unit(0.005,  "line"), 
-            label.size = 0.1) + 
-            ylab("DO") +
-            xlab("Time, h") +  
+            guides(fill = FALSE) +
+            #geom_label_repel(data = . %>% filter(time == last(time)), 
+            #aes(label = gain2), color = "black", show.legend = FALSE,
+            #na.rm = TRUE, size = 02, 
+            #nudge_x = 0.1, 
+            #nudge_y = 0.1,
+            #box.padding = unit(0.005,  "line"), 
+            #label.size = 0.1) + 
+            ylab("Riboflavine") +
+            xlab("")+ 
             theme(strip.text = element_text(face = "bold", color = "white"),
-            strip.background = element_rect( fill = "aquamarine4"))
+                 strip.background = element_rect( fill = "aquamarine4")) + 
+            ggtitle(glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), subtitle = glue("Anaerobic mode: {anaerob}"))
 
+            #a control for to skip empty plots
             if(dim(p3$data)[1] == 0){
             p3 <- NULL
+            }   
+#DO plot
+colrsp4 = colrs[1:length(unique(df_do$gain2))]
+if (anaerob == "Off"){
+    p4  = df_do %>%   
+    ggplot(aes(x = time, y = value)) +
+        geom_line( aes(y = value, group = gain2, 
+        color = gain2), show.legend = TRUE, lwd = 0.5) +
+        geom_point(pch = 21, aes(fill = gain2), 
+        color = "grey", stroke = 0.05, show.legend = FALSE) +
+        scale_color_manual(values = colrsp4) +
+        scale_fill_manual(values = colrsp4) +
+        scale_x_continuous(n.breaks = 8) + 
+        theme_bw()  +
+        guides(fill = FALSE) +
+        facet_wrap(~calibrated, scale = "free_y") + 
+        labs(color = "Filterset") +
+        #geom_label_repel(data = . %>% filter(time == last(time)), 
+        #aes(label = filterset), color = "black", show.legend = FALSE,
+        #na.rm = TRUE, size = 02, 
+        #nudge_x = 1, 
+        #nudge_y = 1,
+        #box.padding = unit(0.005,  "line"), 
+        #label.size = 0.1) + 
+        ylab("DO") +
+        xlab("Time, h") +  
+        theme(strip.text = element_text(face = "bold", color = "white"),
+        strip.background = element_rect( fill = "aquamarine4"))
+
+            if(dim(p4$data)[1] == 0){
+            p4 <- NULL
             }
             
-            if(!is.null(p1) & !is.null(p2) & !is.null(p3)){
+            if(!is.null(p1) & !is.null(p2) & !is.null(p3) & !is.null(p4)){
+            p4$theme$strip.text <- element_blank()
             p3$theme$strip.text <- element_blank()
             p2$theme$strip.text <- element_blank()
-            p3$labels$title <- NULL
-            p3$labels$subtitle <- NULL
-            p2$labels$title <- NULL
-            p2$labels$subtitle <- NULL
-            p1 + p2 + p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
-            } else if(!is.null(p1) & is.null(p2) & !is.null(p3)){
             p3$theme$strip.text <- element_blank()
-            p3$labels$title <- NULL
-            p3$labels$subtitle <- NULL
-            p1 + p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
-            } else if (is.null(p1) & is.null(p2) & !is.null(p3)){
-            p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
+            p2$theme$strip.text <- element_blank()
+            p1$labels$x <- element_blank()
+            p2$labels$x <- element_blank()
+            p3$labels$x <- element_blank()
+            p1 + p2 + p3 + p4 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + patchwork::plot_annotation(
+            title = glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
+            subtitle = glue("Anaerobic mode: {anaerob}"),
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
+            } else if(!is.null(p1) & is.null(p2) & !is.null(p3) & !is.null(p4)){
+            p4$theme$strip.text <- element_blank()
+            p3$theme$strip.text <- element_blank()
+            p1$labels$x <- element_blank()
+            p3$labels$x <- element_blank()
+
+            p1 + p3 + p4 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ patchwork::plot_annotation(
+            title = glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
+            subtitle = glue("Anaerobic mode: {anaerob}"),
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
+            } else if (is.null(p1) & is.null(p2) & !is.null(p3) & !is.null(p4) ){
+            p4$theme$strip.text <- element_blank()
+            p3$labels$x <- element_blank()
+
+            p3 + p4+ patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + patchwork::plot_annotation(
+            title = glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
+            subtitle = glue("Anaerobic mode: {anaerob}"),
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
             }
               
       
             } else {
-            if(!is.null(p1) & !is.null(p2)){
+            if(!is.null(p1) & !is.null(p2) & !is.null(p3)){
             p2$theme$strip.text <- element_blank()
-            p2$labels$title <- NULL
-            p2$labels$subtitle <- NULL
-            p1 + p2+ patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
-            } else if(!is.null(p1) & is.null(p2)){
-            p1 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))
+            p3$theme$strip.text <- element_blank()
+            p1$labels$x <- element_blank()
+            p2$labels$x <- element_blank()
+
+            p1 + p2+ p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + patchwork::plot_annotation(
+            title = glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
+            subtitle = glue("Anaerobic mode: {anaerob}"),
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
+            } else if(!is.null(p1) & is.null(p2) & !is.null(p3)){
+            p3$theme$strip.text <- element_blank()
+            p1$labels$x <- element_blank()
+
+            p1 + p3 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + patchwork::plot_annotation(
+            title = glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
+            subtitle = glue("Anaerobic mode: {anaerob}"),
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+            } else if (!is.null(p1) & is.null(p2) & is.null(p3)){
+            p1 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + patchwork::plot_annotation(
+            title = glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
+            subtitle = glue("Anaerobic mode: {anaerob}"),
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
             }
             }
             ggsave(glue("{output_dir}/User: {user}_Timeseries_plot_of_{calib}_data_for_well_{well[i]}_with_{length(flt_set)}_filtersets (Anaerobic mode {anaerob})_date: {date}.jpeg"), dpi = 700)
