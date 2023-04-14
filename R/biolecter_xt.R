@@ -4,13 +4,8 @@
 #' @param calibration can take three values; TRUE (only shows calibrated values), FALSE (only shows raw data), and both (shows both calibrated and raw data).
 #' @param replic takes bolean values, TRUE (default; you have biological or technical replica) and FALSE (no replica).
 #' @param n_sheets the number of sheets in the output.xlsx file. This is important for wrangling the full dataset.
-#' @source 
 #' @export
-biolect_xt <- function(path_to_biolector_xlsx, 
-                        working_dir, 
-                        caliberation = "both", 
-                        replic = TRUE, 
-                        n_sheets = 8){ 
+biolect_xt <- function(path_to_biolector_xlsx, working_dir, caliberation = "both", replic = TRUE, n_sheets = 8){ 
 
 setwd(working_dir)
 
@@ -168,10 +163,26 @@ if(replic == TRUE){
     #Replicate On
 
     lay_df = layout_df[complete.cases(layout_df),] %>% group_by(Description) %>% data.frame() %>% mutate(group = as.numeric(factor(Description))) 
+
     #expanding group vairable to the length of long data
     if(length(unique(lay_df[lay_df$Well %in% data$well, "group"])) > 1){
-    data$group <- ifelse(data$well %in% lay_df$Well, lay_df$group, "No")
-    data$isolate <- ifelse(data$well %in% lay_df$Well, lay_df$Description, "No")
+    #adding isolate
+        for(i in 1:nrow(data)){
+    
+            id <- data[i, "well"]
+            isol <- lay_df[lay_df$Well %in% id, "Description"]
+            data[i, "isolate"] <- isol
+
+        }
+
+    #adding group
+        for(i in 1:nrow(data)){
+    
+            id <- data[i, "well"]
+            grp <- lay_df[lay_df$Well %in% id, "group"]
+            data[i, "group"] <- grp
+
+        }
     } else if((length(unique(lay_df[lay_df$Well %in% data$well, "group"])) == 1)){
     data$group <- rep(unique(lay_df[lay_df$Well %in% data$well, "group"]), nrow(data))
     data$isolate <- rep(unique(lay_df[lay_df$Well %in% data$well, "Description"]), nrow(data))
@@ -216,7 +227,7 @@ if(replic == TRUE){
             geom_errorbar(aes(ymin = mean-std, ymax = mean+std), 
             width = 1, color = "deeppink1", alpha = 0.05,
             position = position_dodge(0.5)) +
-            geom_line( aes( color = gain2), show.legend = TRUE, lwd = 0.5) +
+            geom_line( aes(color = gain2), show.legend = TRUE, lwd = 0.5) +
             geom_point(pch = 21, aes(fill = gain2), 
             color = "white", stroke = 0.05, show.legend = FALSE) +
             scale_color_manual(values = colrsp1) +
@@ -536,7 +547,7 @@ p2  = df_ph %>%
             xlab("")+ 
             theme(strip.text = element_text(face = "bold", color = "white"),
                  strip.background = element_rect( fill = "aquamarine4")) 
-                 
+
             #a control for to skip empty plots
             if(dim(p3$data)[1] == 0){
             p3 <- NULL
