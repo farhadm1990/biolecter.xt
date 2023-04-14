@@ -17,11 +17,15 @@ library(biolecter.xt)
 
 ## 3. Rinning `biolecter_xt` function
 ```R
-biolecter.xt:::biolect_xt(path_to_biolector_xlsx="path_to_file.xlsx",
+biolecter.xt:::biolecter_xt(path_to_biolector_xlsx="path_to_file.xlsx",
 working_dir="output_directory",
 caliberation= "both", #to show calibrated (TRUE), raw (FALSE) or both of them "both".
 n_sheets= 8, #Number of sheets in the output xlsx dataset (oblicatory).
 replic= TRUE #if you have biological/technical replica
 )
 ```
+
+### An example output plot
+
+![fig1](https://github.com/farhadm1990/biolecter.xt/blob/master/output/p_Timeseries_plot_of_calibrated%20and%20raw_data_for_isolate_Js15-Glucose-pH_with_5_filtersets%20(Anaerobic%20mode%20On).%20Replicate_date:Wed%20Apr%2012%2023:14:30%202023.jpeg)
 
