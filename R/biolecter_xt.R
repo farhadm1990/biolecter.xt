@@ -1,4 +1,15 @@
-biolect_xt <- function(path_to_biolector_xlsx, working_dir, caliberation = "both", replic = TRUE, n_sheets = 8){ 
+#' Processing biolecter XT ouptut data
+#' @param path_to_biolector_xlsx an absolute path to the output file.
+#' @param working_dir is an absolute path to the working directory for the output files.
+#' @param calibration can take three values; TRUE (only shows calibrated values), FALSE (only shows raw data), and both (shows both calibrated and raw data).
+#' @param replic takes bolean values, TRUE (default; you have biological or technical replica) and FALSE (no replica).
+#' @param n_sheets the number of sheets in the output.xlsx file. This is important for wrangling the full dataset.
+#' @export
+biolect_xt <- function(path_to_biolector_xlsx, 
+                        working_dir, 
+                        caliberation = "both", 
+                        replic = TRUE, 
+                        n_sheets = 8){ 
 
 setwd(working_dir)
 
