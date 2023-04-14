@@ -17,7 +17,7 @@ library(biolecter.xt)
 
 ## 3. Rinning `biolecter_xt` function
 ```R
-biolecter.xt:::biolecter_xt(path_to_biolector_xlsx="path_to_file.xlsx",
+biolecter.xt::biolecter_xt(path_to_biolector_xlsx="path_to_file.xlsx",
 working_dir="output_directory",
 caliberation= "both", #to show calibrated (TRUE), raw (FALSE) or both of them "both".
 n_sheets= 8, #Number of sheets in the output xlsx dataset (oblicatory).

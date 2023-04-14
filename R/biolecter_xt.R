@@ -4,6 +4,7 @@
 #' @param calibration can take three values; TRUE (only shows calibrated values), FALSE (only shows raw data), and both (shows both calibrated and raw data).
 #' @param replic takes bolean values, TRUE (default; you have biological or technical replica) and FALSE (no replica).
 #' @param n_sheets the number of sheets in the output.xlsx file. This is important for wrangling the full dataset.
+#' @source 
 #' @export
 biolect_xt <- function(path_to_biolector_xlsx, 
                         working_dir, 
