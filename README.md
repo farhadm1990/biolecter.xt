@@ -1,6 +1,9 @@
 # Biolecter_xt R package
 ## An R package to generate quality plots from Biolecter XT machine.
-This package is compatible with biolecter XT model output which is an excel file with different  sheets inside. The function takes directory to the excel file, a working directory for the output files, the number of sheets in the excel file (very important), and a binary (TRUE/FALSE) for the presence of biological (or technical) replicates. The funcition, then, generates timeseries plots of different filterset values over a range of speciefic time
+This package is compatible with biolecter XT model output which is an excel file with different  sheets inside. The function takes directory to the excel file, a working directory for the output files, the number of sheets in the excel file (very important), and a binary (TRUE/FALSE) for the presence of biological (or technical) replicates. The funcition, then, generates timeseries plots of different filterset values over a range of 
+speciefic time
+
+**NOTE: this package is only tunned for four filtersets, Biomass, pH, Riboflavine, and DO**
 # Installation
 
 ## 1. Isntall and library devtools pakcage on your machine
@@ -27,5 +30,5 @@ replic= TRUE #if you have biological/technical replica
 
 ### An example output plot
 
-![fig1](https://github.com/farhadm1990/biolecter.xt/blob/master/output/p_Timeseries_plot_of_calibrated%20and%20raw_data_for_isolate_Js15-Glucose-pH_with_5_filtersets%20(Anaerobic%20mode%20On).%20Replicate_date:Wed%20Apr%2012%2023:14:30%202023.jpeg)
+![fig1](https://github.com/farhadm1990/biolecter.xt/blob/master/output/p_Timeseries_plot_of_calibrated%20and%20raw_data_for_isolate_JS14-Lactate_with_5_filtersets%20(Anaerobic%20mode%20On).%20Replicate_date:Fri%20Apr%2014%2017:56:07%202023.jpeg)
 

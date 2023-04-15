@@ -376,7 +376,18 @@ if(replic == TRUE){
             p1 + p3 + p4 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ 
             patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
             subtitle = glue("Anaerobic mode: {anaerob}"), 
-            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}")) 
+
+            } else if(!is.null(p1) & !is.null(p2) & is.null(p3) & is.null(p4)){
+            
+            p1$labels$x <- element_blank()
+            p2$theme$strip.text <- element_blank()
+
+            p1 + p2 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ 
+            patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
+            subtitle = glue("Anaerobic mode: {anaerob}"), 
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}")) 
+            
 
             } else if (is.null(p1) & is.null(p2) & !is.null(p3) & !is.null(p4) ){
             p4$theme$strip.text <- element_blank()
@@ -408,8 +419,24 @@ if(replic == TRUE){
             patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
             subtitle = glue("Anaerobic mode: {anaerob}"), 
             caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
             } else if (!is.null(p1) & is.null(p2) & is.null(p3)){
             p1 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ 
+            patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
+            subtitle = glue("Anaerobic mode: {anaerob}"), 
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
+            } else if (!is.null(p1) & !is.null(p2) & is.null(p3)){
+            p2$theme$strip.text <- element_blank()
+            p1$labels$x <- element_blank()
+            
+            p1 + p2 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ 
+            patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
+            subtitle = glue("Anaerobic mode: {anaerob}"), 
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
+            } else if (is.null(p1) & !is.null(p2) & is.null(p3)){
+            p2 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt)))+ 
             patchwork::plot_annotation( title = glue("Timeserie plot of different filtersets for isolate {i} with biological replicate."),
             subtitle = glue("Anaerobic mode: {anaerob}"), 
             caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
@@ -622,6 +649,7 @@ if (anaerob == "Off"){
               
       
             } else {
+
             if(!is.null(p1) & !is.null(p2) & !is.null(p3)){
             p2$theme$strip.text <- element_blank()
             p3$theme$strip.text <- element_blank()
@@ -641,12 +669,18 @@ if (anaerob == "Off"){
             title = glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
             subtitle = glue("Anaerobic mode: {anaerob}"),
             caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+
             } else if (!is.null(p1) & is.null(p2) & is.null(p3)){
             p1 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + patchwork::plot_annotation(
             title = glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
             subtitle = glue("Anaerobic mode: {anaerob}"),
-            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}")) 
 
+            } else if (is.null(p1) & !is.null(p2) & is.null(p3)){
+            p2 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + patchwork::plot_annotation(
+            title = glue("Timeserie plot of different filtersets for well {well[i]}: {isolate[i]}."), 
+            subtitle = glue("Anaerobic mode: {anaerob}"),
+            caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
             }
             }
             ggsave(glue("{output_dir}/User: {user}_Timeseries_plot_of_{calib}_data_for_well_{well[i]}_with_{length(flt_set)}_filtersets (Anaerobic mode {anaerob})_date: {date}.jpeg"), dpi = 700)
