@@ -362,7 +362,7 @@ if(replic == TRUE){
             p1$labels$x <- element_blank()
             p2$labels$x <- element_blank()
             p3$labels$x <- element_blank()
-            p1 + p2 + p3 + p4 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + 
+            p_full = p1 + p2 + p3 + p4 + patchwork::plot_layout(ncol =1, nrow =length(unique(pattern_flt))) + 
             patchwork::plot_annotation( title = "Timeserie plot of different filtersets for isolate {i} with biological replicate.",
             subtitle = "Anaerobic mode: {anaerob}", 
             caption = glue("Biolecter ID: {metdat[metdat[,1] == 'BioLector Id', 2]}"))
